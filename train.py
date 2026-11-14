@@ -1,5 +1,6 @@
 import datetime
 import os,random
+import time
 
 import numpy as np
 import torch
@@ -20,15 +21,26 @@ from utils.dataloader_for_DAUB import RsCarDataset, seqDataset, dataset_collate
 from utils.utils import get_classes, show_config
 from utils.utils_fit import fit_one_epoch
 
+def memory_report():
+    values = {}
+    for path, key in (('/proc/self/status', 'VmRSS'), ('/proc/meminfo', 'MemAvailable')):
+        with open(path) as f:
+            for line in f:
+                if line.startswith(key):
+                    values[key] = int(line.split()[1]) / 1024 ** 2
+    gpu = [torch.cuda.memory_reserved(i) / 1024 ** 3 for i in range(torch.cuda.device_count())]
+    return 'process {:.1f} GB, machine available {:.1f} GB, GPU reserved {}'.format(
+        values['VmRSS'], values['MemAvailable'], ['{:.1f} GB'.format(g) for g in gpu])
+
 if __name__ == "__main__":
 
-    Cuda            = True
+    Cuda            = torch.cuda.is_available()
 
     distributed     = False
 
     sync_bn         = False
 
-    fp16            = False
+    fp16            = os.environ.get('CHAL_FP16', '0') == '1'
 
     classes_path    = 'model_data/classes.txt'
 
@@ -57,8 +69,8 @@ if __name__ == "__main__":
     Freeze_Epoch        = 100
     Freeze_batch_size   = 4
 
-    UnFreeze_Epoch      = 100
-    Unfreeze_batch_size = 4
+    UnFreeze_Epoch      = int(os.environ.get('CHAL_EPOCHS', 100))
+    Unfreeze_batch_size = int(os.environ.get('CHAL_BATCH_SIZE', 4))
 
     Freeze_Train        = False
 
@@ -71,14 +83,20 @@ if __name__ == "__main__":
 
     lr_decay_type       = "cos"
 
-    save_period         = 1
+    save_period         = int(os.environ.get('CHAL_SAVE_PERIOD', 1))
 
-    save_dir            = 'logs'
+    save_dir            = os.environ.get('CHAL_SAVE_DIR', 'logs')
+
+    resume_path         = os.path.join(save_dir, 'resume.pth')
+
+    max_hours           = float(os.environ.get('CHAL_MAX_HOURS', 0))
+    run_epochs          = int(os.environ.get('CHAL_RUN_EPOCHS', 0))
+    start_time          = time.time()
 
     eval_flag           = True
-    eval_period         = 100
+    eval_period         = int(os.environ.get('CHAL_EVAL_PERIOD', 100))
 
-    num_workers         = 2
+    num_workers         = int(os.environ.get('CHAL_NUM_WORKERS', 2))
 
     train_annotation_path   = os.environ.get('CHAL_TRAIN_ANNOTATION', 'datasets/NUDT-MIRSDT/coco_train_NUDT.txt')
     val_annotation_path     = os.environ.get('CHAL_VAL_ANNOTATION', 'datasets/NUDT-MIRSDT/coco_val_NUDT.txt')
@@ -109,6 +127,7 @@ if __name__ == "__main__":
     model = slowfastnet(
         num_classes=num_classes,
         num_frame=5,
+        fdam=os.environ.get('CHAL_FDAM', '0') == '1',
     )
     weights_init(model)
     if model_path != '':
@@ -223,6 +242,14 @@ if __name__ == "__main__":
         }[optimizer_type]
         optimizer.add_param_group({"params": pg1, "weight_decay": weight_decay})
         optimizer.add_param_group({"params": pg2})
+        # The groups above only collect parameters named weight or bias, so FDAM's band weights (freq_scale.weights)
+        # would never train. They get their own group without weight decay. CHAL's own parameters the groups miss
+        # (relative position bias, positional embedding, frame weights, time scale) are left as the authors had
+        # them, so the original teacher stays a matched baseline.
+        grouped = {id(p) for p in pg0 + pg1 + pg2}
+        fdam_params = [p for n, p in model.named_parameters() if 'freq_scale' in n and id(p) not in grouped]
+        if fdam_params:
+            optimizer.add_param_group({"params": fdam_params, "weight_decay": 0.0})
 
         lr_scheduler_func = get_lr_scheduler(lr_decay_type, Init_lr_fit, Min_lr_fit, UnFreeze_Epoch)
 
@@ -234,6 +261,23 @@ if __name__ == "__main__":
 
         if ema:
             ema.updates     = epoch_step * Init_Epoch
+
+        if os.path.exists(resume_path):
+            checkpoint = torch.load(resume_path, map_location=device)
+            model.load_state_dict(checkpoint['model'])
+            ema.ema.load_state_dict(checkpoint['ema'])
+            ema.updates = checkpoint['ema_updates']
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            if scaler is not None:
+                scaler.load_state_dict(checkpoint['scaler'])
+            Init_Epoch = checkpoint['epoch'] + 1
+            print('Resumed from {} at epoch {}.'.format(resume_path, Init_Epoch))
+
+            # A restarted process must not replay the shuffle order of the first run.
+            torch.manual_seed(seed + Init_Epoch)
+            torch.cuda.manual_seed_all(seed + Init_Epoch)
+            np.random.seed(seed + Init_Epoch)
+            random.seed(seed + Init_Epoch)
 
         train_dataset = seqDataset(train_annotation_path, input_shape[0], 5, 'train', None)
         val_dataset = seqDataset(val_annotation_path, input_shape[0], 5, 'val', None)
@@ -304,8 +348,28 @@ if __name__ == "__main__":
 
             fit_one_epoch(model_train, model, ema, yolo_loss, loss_history, eval_callback, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, fp16, scaler, save_period, log_dir, local_rank)
 
+            if local_rank == 0:
+                torch.save({
+                    'epoch': epoch,
+                    'model': model.state_dict(),
+                    'ema': ema.ema.state_dict(),
+                    'ema_updates': ema.updates,
+                    'optimizer': optimizer.state_dict(),
+                    'scaler': scaler.state_dict() if scaler is not None else None,
+                }, resume_path + '.tmp')
+                os.replace(resume_path + '.tmp', resume_path)
+                print('Memory after epoch {}: {}'.format(epoch + 1, memory_report()))
+
             if distributed:
                 dist.barrier()
+
+            if max_hours > 0 and (time.time() - start_time) / 3600 >= max_hours:
+                print('Reached CHAL_MAX_HOURS after epoch {}, stopping.'.format(epoch + 1))
+                break
+
+            if run_epochs > 0 and epoch + 1 - Init_Epoch >= run_epochs:
+                print('Ran {} epochs in this process, stopping for a restart.'.format(run_epochs))
+                break
 
         if local_rank == 0:
             loss_history.writer.close()
