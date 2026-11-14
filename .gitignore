@@ -19,3 +19,9 @@ output.avi
 
 datasets/
 VOCdevkit/
+
+# Project outputs that are not source
+logs_student/
+.temp_map_out/
+speed_*/
+Ours_RsCarData.txt
