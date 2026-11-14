@@ -2,6 +2,8 @@ import json
 import os
 import colorsys
 from nets.slowfastnet import slowfastnet as Network
+from nets.student import CompactStudent
+from utils.background_change import background_change
 from utils.utils import (cvtColor, get_classes, preprocess_input, resize_image,
                          show_config)
 import numpy as np
@@ -11,8 +13,9 @@ from PIL import Image
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from tqdm import tqdm
-from utils.utils import cvtColor, get_classes, preprocess_input, resize_image
+from utils.utils import cvtColor, get_classes, history_frame_paths, preprocess_input, resize_image
 from utils.utils_bbox import decode_outputs, non_max_suppression
+from utils.det_metrics import best_operating_point, operating_point
 
 map_mode            = 0
 
@@ -21,13 +24,15 @@ dataset_img_path    = os.environ.get('CHAL_DATASET_IMG_PATH', 'datasets/RsCarDat
 
 temp_save_path      = 'map_out/coco_eval'
 
+bg_strength         = float(os.environ.get('CHAL_BG_STRENGTH', 0))
+
 class MAP_vid(object):
     _defaults = {
 
         "model_path"        : os.environ.get('CHAL_MODEL_PATH', 'logs/model.pth'),
         "classes_path"      : 'model_data/classes.txt',
 
-        "input_shape"       : [1024, 1024],
+        "input_shape"       : [int(os.environ.get('CHAL_INPUT_SIZE', 1024))] * 2,
 
         "phi"               : 's',
 
@@ -35,9 +40,9 @@ class MAP_vid(object):
 
         "nms_iou"           : 0.65,
 
-        "letterbox_image"   : False,
+        "letterbox_image"   : os.environ.get('CHAL_LETTERBOX', '0') == '1',
 
-        "cuda"              : True,
+        "cuda"              : torch.cuda.is_available(),
     }
 
     @classmethod
@@ -62,7 +67,10 @@ class MAP_vid(object):
         show_config(**self._defaults)
 
     def generate(self, onnx=False):
-        self.net    = Network(self.num_classes, num_frame=5)
+        if os.environ.get('CHAL_MODEL_KIND', 'teacher') == 'student':
+            self.net = CompactStudent(self.num_classes, num_frame=5, width=float(os.environ.get('CHAL_STUDENT_WIDTH', 0.25)))
+        else:
+            self.net = Network(self.num_classes, num_frame=5, fdam=os.environ.get('CHAL_FDAM', '0') == '1')
         device      = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.net.load_state_dict(torch.load(self.model_path, map_location=device))
         self.net    = self.net.eval()
@@ -72,7 +80,7 @@ class MAP_vid(object):
                 self.net = nn.DataParallel(self.net)
                 self.net = self.net.cuda()
 
-    def detect_image(self, image_id, images, results):
+    def detect_image(self, image_id, images, results, boxes=None):
 
         image_shape = np.array(np.shape(images[0])[0:2])
 
@@ -90,6 +98,11 @@ class MAP_vid(object):
             images = torch.from_numpy(image_data)
             if self.cuda:
                 images = images.cuda()
+
+            if bg_strength > 0:
+                # The pattern depends only on the frame, so every model sees the same changed clips.
+                generator = torch.Generator().manual_seed(int(image_id))
+                images = background_change(images, [boxes], bg_strength, generator=generator)
 
             outputs = self.net(images)
             outputs = decode_outputs(outputs, self.input_shape)
@@ -116,11 +129,17 @@ class MAP_vid(object):
         return results
 
 def get_history_imgs(line):
-    dir_path = line.replace(line.split('/')[-1],'')
-    file_type = line.split('.')[-1]
-    index = int(line.split('/')[-1][:-4])
+    return history_frame_paths(line, 5)
 
-    return [os.path.join(dir_path, "%06d.%s" % (max(id, 1), file_type)) for id in range(index - 4, index + 1)]
+def letterbox_boxes(annotations, width, height, size):
+    # COCO boxes in the original image, as centre x, centre y, width, height in the network's input.
+    scale = min(size / width, size / height)
+    dx, dy = (size - int(width * scale)) // 2, (size - int(height * scale)) // 2
+    boxes = []
+    for ann in annotations:
+        x, y, w, h = ann['bbox']
+        boxes.append([(x + w / 2) * scale + dx, (y + h / 2) * scale + dy, w * scale, h * scale])
+    return np.array(boxes).reshape(-1, 4)
 
 if __name__ == "__main__":
     if not os.path.exists(temp_save_path):
@@ -142,22 +161,48 @@ if __name__ == "__main__":
                 images = get_history_imgs(image_path)
                 images = [Image.open(item) for item in images]
 
-                results     = yolo.detect_image(image_id, images, results)
+                info        = cocoGt.loadImgs(image_id)[0]
+                boxes       = letterbox_boxes(cocoGt.loadAnns(cocoGt.getAnnIds(imgIds=image_id)), info['width'], info['height'], yolo.input_shape[0])
+                results     = yolo.detect_image(image_id, images, results, boxes)
             json.dump(results, f)
 
     if map_mode == 0 or map_mode == 2:
-        cocoDt      = cocoGt.loadRes(os.path.join(temp_save_path, 'eval_results.json'))
-        cocoEval    = COCOeval(cocoGt, cocoDt, 'bbox')
-        cocoEval.evaluate()
-        cocoEval.accumulate()
-        cocoEval.summarize()
-        precisions = cocoEval.eval['precision']
-        precision_50 = precisions[0,:,0,0,-1]
-        recalls = cocoEval.eval['recall']
-        recall_50 = recalls[0,0,0,-1]
+        with open(os.path.join(temp_save_path, 'eval_results.json')) as f:
+            detections = json.load(f)
+        # pycocotools cannot score an empty result list, which a weak model can produce: it then scores zero.
+        map50 = 0.0
+        if detections:
+            cocoDt      = cocoGt.loadRes(os.path.join(temp_save_path, 'eval_results.json'))
+            cocoEval    = COCOeval(cocoGt, cocoDt, 'bbox')
+            cocoEval.evaluate()
+            cocoEval.accumulate()
+            cocoEval.summarize()
+            precisions = cocoEval.eval['precision']
+            precision_50 = precisions[0,:,0,0,-1]
+            recalls = cocoEval.eval['recall']
+            recall_50 = recalls[0,0,0,-1]
+            map50 = float(cocoEval.stats[1])
 
-        print("Precision: %.4f, Recall: %.4f, F1: %.4f" %(np.mean(precision_50[:int(recall_50*100)]), recall_50, 2*recall_50*np.mean(precision_50[:int(recall_50*100)])/( recall_50+np.mean(precision_50[:int(recall_50*100)]))))
+            print("Precision: %.4f, Recall: %.4f, F1: %.4f" %(np.mean(precision_50[:int(recall_50*100)]), recall_50, 2*recall_50*np.mean(precision_50[:int(recall_50*100)])/( recall_50+np.mean(precision_50[:int(recall_50*100)]))))
+
+            with open("Ours_RsCarData.txt", 'w') as f:
+                for pred in precision_50:
+                    f.writelines(str(pred)+'\t')
+        else:
+            print("No detections above confidence %s, every score is zero." % MAP_vid.get_defaults('confidence'))
         print("Get map done.")
-        with open("Ours_RsCarData.txt", 'w') as f:
-            for pred in precision_50:
-                f.writelines(str(pred)+'\t')
+
+        frames = cocoGt.loadImgs(ids)
+        annotations = cocoGt.loadAnns(cocoGt.getAnnIds(imgIds=ids))
+        if 'CHAL_CONF_THRES' in os.environ:
+            metrics = operating_point(frames, annotations, detections, float(os.environ['CHAL_CONF_THRES']))
+            metrics['threshold_source'] = 'fixed'
+        else:
+            metrics = best_operating_point(frames, annotations, detections)
+            metrics['threshold_source'] = 'best F1 on this split'
+        metrics['map50'] = map50
+        print("Pd: %.4f, False alarms/frame: %.4f, Fa (pixel): %.3e, Precision: %.4f, F1: %.4f, threshold: %.3f (%s)" % (
+            metrics['pd'], metrics['false_alarms_per_frame'], metrics['fa_pixel'], metrics['precision'], metrics['f1'],
+            metrics['threshold'], metrics['threshold_source']))
+        with open(os.path.join(temp_save_path, 'metrics.json'), 'w') as f:
+            json.dump(metrics, f, indent=2)
