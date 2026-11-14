@@ -1,0 +1,206 @@
+{
+  "epochs": 17,
+  "iters_per_epoch": 900,
+  "speed_it_per_s": {
+    "labels": 1.27,
+    "frequency": 2.2,
+    "feature": 2.2
+  },
+  "runs": {
+    "labels": {
+      "val": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.95,
+        "precision": 0.9908735332464146,
+        "f1": 0.9700063816209318,
+        "false_alarms": 7,
+        "false_alarms_per_frame": 0.00875,
+        "fa_pixel": 9.035939715490295e-06,
+        "num_targets": 800,
+        "num_frames": 800,
+        "threshold_source": "best F1 on this split",
+        "map50": 0.9342496419891237
+      },
+      "test": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.91844997108155,
+        "precision": 0.9526094781043791,
+        "f1": 0.9352179034157833,
+        "false_alarms": 79,
+        "false_alarms_per_frame": 0.0395,
+        "fa_pixel": 3.313206567360788e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.781126310199312
+      },
+      "test_bg": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.8906882591093117,
+        "precision": 0.9494451294697904,
+        "f1": 0.9191286183228887,
+        "false_alarms": 82,
+        "false_alarms_per_frame": 0.041,
+        "fa_pixel": 3.400267785214059e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.7549838720735498
+      },
+      "finished_epochs": 17,
+      "planned_epochs": 17,
+      "test_low_contrast": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.7844990548204159,
+        "precision": 0.8469387755102041,
+        "f1": 0.8145240431795878,
+        "false_alarms": 75,
+        "false_alarms_per_frame": 0.09375,
+        "fa_pixel": 7.926713719834168e-05,
+        "num_targets": 529,
+        "num_frames": 800
+      },
+      "test_other": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.9775,
+        "precision": 0.9966015293118097,
+        "f1": 0.9869583508624317,
+        "false_alarms": 4,
+        "false_alarms_per_frame": 0.0033333333333333335,
+        "fa_pixel": 2.6830365480243026e-06,
+        "num_targets": 1200,
+        "num_frames": 1200
+      }
+    },
+    "feature": {
+      "val": {
+        "threshold": 0.4,
+        "pd": 0.9475,
+        "precision": 0.9921465968586387,
+        "f1": 0.969309462915601,
+        "false_alarms": 6,
+        "false_alarms_per_frame": 0.0075,
+        "fa_pixel": 7.2667885596711255e-06,
+        "num_targets": 800,
+        "num_frames": 800,
+        "threshold_source": "best F1 on this split",
+        "map50": 0.9223801737031844
+      },
+      "test": {
+        "threshold": 0.4,
+        "pd": 0.876229034123771,
+        "precision": 0.9294478527607362,
+        "f1": 0.9020541827924977,
+        "false_alarms": 115,
+        "false_alarms_per_frame": 0.0575,
+        "fa_pixel": 4.846791396878991e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.7699945136447433
+      },
+      "test_bg": {
+        "threshold": 0.4,
+        "pd": 0.8438403701561596,
+        "precision": 0.9234177215189874,
+        "f1": 0.8818374131157449,
+        "false_alarms": 121,
+        "false_alarms_per_frame": 0.0605,
+        "fa_pixel": 5.088068983883251e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.756047175954191
+      },
+      "finished_epochs": 17,
+      "planned_epochs": 17,
+      "test_low_contrast": {
+        "threshold": 0.4,
+        "pd": 0.6635160680529301,
+        "precision": 0.7613882863340564,
+        "f1": 0.7090909090909091,
+        "false_alarms": 110,
+        "false_alarms_per_frame": 0.1375,
+        "fa_pixel": 0.00011847478143163264,
+        "num_targets": 529,
+        "num_frames": 800
+      },
+      "test_other": {
+        "threshold": 0.4,
+        "pd": 0.97,
+        "precision": 0.9957228400342173,
+        "f1": 0.9826931194596876,
+        "false_alarms": 5,
+        "false_alarms_per_frame": 0.004166666666666667,
+        "fa_pixel": 2.263560622894286e-06,
+        "num_targets": 1200,
+        "num_frames": 1200
+      }
+    },
+    "frequency": {
+      "val": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.95875,
+        "precision": 0.9896774193548387,
+        "f1": 0.973968253968254,
+        "false_alarms": 8,
+        "false_alarms_per_frame": 0.01,
+        "fa_pixel": 8.339457247920707e-06,
+        "num_targets": 800,
+        "num_frames": 800,
+        "threshold_source": "best F1 on this split",
+        "map50": 0.9182030093868522
+      },
+      "test": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.9109311740890689,
+        "precision": 0.8508914100486223,
+        "f1": 0.8798882681564246,
+        "false_alarms": 276,
+        "false_alarms_per_frame": 0.138,
+        "fa_pixel": 0.00010462268200302014,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.7900931029439516
+      },
+      "test_bg": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.8820127241179873,
+        "precision": 0.8529082774049217,
+        "f1": 0.8672163775945408,
+        "false_alarms": 263,
+        "false_alarms_per_frame": 0.1315,
+        "fa_pixel": 9.635523186584684e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.7622859169988988
+      },
+      "finished_epochs": 17,
+      "planned_epochs": 17,
+      "test_low_contrast": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.7410207939508506,
+        "precision": 0.593939393939394,
+        "f1": 0.6593776282590412,
+        "false_alarms": 268,
+        "false_alarms_per_frame": 0.335,
+        "fa_pixel": 0.0002566354677738123,
+        "num_targets": 529,
+        "num_frames": 800
+      },
+      "test_other": {
+        "threshold": 0.35000000000000003,
+        "pd": 0.9858333333333333,
+        "precision": 0.9932829554995802,
+        "f1": 0.9895441237975743,
+        "false_alarms": 8,
+        "false_alarms_per_frame": 0.006666666666666667,
+        "fa_pixel": 4.2946324645154614e-06,
+        "num_targets": 1200,
+        "num_frames": 1200
+      }
+    }
+  }
+}

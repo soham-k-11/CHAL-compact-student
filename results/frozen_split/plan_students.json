@@ -1,0 +1,19 @@
+{
+  "stage": "students",
+  "epochs": 8,
+  "iters_per_epoch": 900,
+  "epoch_hours": {
+    "S0_labels": 0.25,
+    "S1_feature": 0.12875536480686695,
+    "S2_frequency": 0.12875536480686695,
+    "S3_full": 0.12875536480686695
+  },
+  "speed_it_per_s": {
+    "S0_labels": 1.2,
+    "S1_feature": 2.33,
+    "S2_frequency": 2.33,
+    "S3_full": 2.33
+  },
+  "frozen_val": "Sequence1,Sequence12,Sequence18,Sequence26,Sequence38,Sequence44,Sequence75,Sequence82",
+  "seed": 3407
+}

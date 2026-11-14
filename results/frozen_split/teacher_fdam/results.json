@@ -1,0 +1,43 @@
+{
+  "val": {
+    "threshold": 0.55,
+    "pd": 0.6135770234986945,
+    "precision": 0.7925801011804384,
+    "f1": 0.6916850625459897,
+    "false_alarms": 123,
+    "false_alarms_per_frame": 0.15375,
+    "fa_pixel": 0.00022019274392966504,
+    "num_targets": 766,
+    "num_frames": 800,
+    "threshold_source": "best F1 on this split",
+    "map50": 0.6278642659620407
+  },
+  "test": {
+    "threshold": 0.55,
+    "pd": 0.5621746674378253,
+    "precision": 0.886052871467639,
+    "f1": 0.6878980891719745,
+    "false_alarms": 125,
+    "false_alarms_per_frame": 0.0625,
+    "fa_pixel": 7.288730214397687e-05,
+    "num_targets": 1729,
+    "num_frames": 2000,
+    "threshold_source": "fixed",
+    "map50": 0.6059486426576906
+  },
+  "test_bg": {
+    "threshold": 0.55,
+    "pd": 0.5228455754771544,
+    "precision": 0.8634192932187201,
+    "f1": 0.6512968299711815,
+    "false_alarms": 143,
+    "false_alarms_per_frame": 0.0715,
+    "fa_pixel": 8.553499041211522e-05,
+    "num_targets": 1729,
+    "num_frames": 2000,
+    "threshold_source": "fixed",
+    "map50": 0.5645278507654424
+  },
+  "finished_epochs": 4,
+  "planned_epochs": 4
+}

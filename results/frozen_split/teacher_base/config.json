@@ -1,0 +1,31 @@
+{
+  "script": "train.py",
+  "env": {
+    "CHAL_BATCH_SIZE": "4",
+    "CHAL_NUM_WORKERS": "2",
+    "CHAL_FP16": "1",
+    "CHAL_TRAIN_ANNOTATION": "/tmp/CHAL/datasets/NUDT-MIRSDT/run_train.txt",
+    "CHAL_VAL_ANNOTATION": "/tmp/CHAL/datasets/NUDT-MIRSDT/run_val.txt",
+    "CHAL_BG_STRENGTH": "25.0",
+    "CHAL_FDAM": "0",
+    "CHAL_SAVE_DIR": "/kaggle/working/teacher_base/logs",
+    "CHAL_EPOCHS": "4",
+    "CHAL_EVAL_PERIOD": "9999",
+    "CHAL_SAVE_PERIOD": "5"
+  },
+  "plan": {
+    "stage": "teachers",
+    "epochs": 4,
+    "iters_per_epoch": 900,
+    "epoch_hours": {
+      "teacher_base": 0.49499999999999994,
+      "teacher_fdam": 0.447
+    },
+    "speed_it_per_s": {
+      "teacher_base": 0.6060606060606061,
+      "teacher_fdam": 0.6711409395973155
+    },
+    "frozen_val": "Sequence1,Sequence12,Sequence18,Sequence26,Sequence38,Sequence44,Sequence75,Sequence82",
+    "seed": 3407
+  }
+}

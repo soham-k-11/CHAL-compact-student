@@ -1,0 +1,28 @@
+{
+  "val": {
+    "threshold": 0.7500000000000001,
+    "pd": 0.6225,
+    "precision": 0.9822485207100592,
+    "f1": 0.7620504973221117,
+    "false_alarms": 9,
+    "false_alarms_per_frame": 0.01125,
+    "fa_pixel": 8.593832078176696e-06,
+    "num_targets": 800,
+    "num_frames": 800,
+    "threshold_source": "best F1 on this split",
+    "map50": 0.6863030038077237
+  },
+  "test": {
+    "threshold": 0.7500000000000001,
+    "pd": 0.6130711393869288,
+    "precision": 0.75177304964539,
+    "f1": 0.675374323032813,
+    "false_alarms": 350,
+    "false_alarms_per_frame": 0.175,
+    "fa_pixel": 0.00015727650732645274,
+    "num_targets": 1729,
+    "num_frames": 2000,
+    "threshold_source": "fixed",
+    "map50": 0.581432415400193
+  }
+}

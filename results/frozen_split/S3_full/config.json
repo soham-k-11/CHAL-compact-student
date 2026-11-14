@@ -1,0 +1,38 @@
+{
+  "script": "train_student.py",
+  "env": {
+    "CHAL_BATCH_SIZE": "4",
+    "CHAL_NUM_WORKERS": "2",
+    "CHAL_FP16": "1",
+    "CHAL_TRAIN_ANNOTATION": "/tmp/CHAL/datasets/NUDT-MIRSDT/run_train.txt",
+    "CHAL_VAL_ANNOTATION": "/tmp/CHAL/datasets/NUDT-MIRSDT/run_val.txt",
+    "CHAL_BG_STRENGTH": "25.0",
+    "CHAL_STUDENT_MODE": "frequency",
+    "CHAL_STUDENT_WIDTH": "0.25",
+    "CHAL_TEACHER": "/kaggle/input/notebooks/datsmesoham11/hscd-full/teacher_fdam/teacher_ema.pth",
+    "CHAL_TEACHER_FDAM": "1",
+    "CHAL_SAVE_DIR": "/kaggle/working/S3_full/logs",
+    "CHAL_EPOCHS": "8",
+    "CHAL_EVAL_PERIOD": "9999",
+    "CHAL_SAVE_PERIOD": "5"
+  },
+  "plan": {
+    "stage": "students",
+    "epochs": 8,
+    "iters_per_epoch": 900,
+    "epoch_hours": {
+      "S0_labels": 0.25,
+      "S1_feature": 0.12875536480686695,
+      "S2_frequency": 0.12875536480686695,
+      "S3_full": 0.12875536480686695
+    },
+    "speed_it_per_s": {
+      "S0_labels": 1.2,
+      "S1_feature": 2.33,
+      "S2_frequency": 2.33,
+      "S3_full": 2.33
+    },
+    "frozen_val": "Sequence1,Sequence12,Sequence18,Sequence26,Sequence38,Sequence44,Sequence75,Sequence82",
+    "seed": 3407
+  }
+}

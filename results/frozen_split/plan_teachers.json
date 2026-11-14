@@ -1,0 +1,15 @@
+{
+  "stage": "teachers",
+  "epochs": 4,
+  "iters_per_epoch": 900,
+  "epoch_hours": {
+    "teacher_base": 0.49499999999999994,
+    "teacher_fdam": 0.447
+  },
+  "speed_it_per_s": {
+    "teacher_base": 0.6060606060606061,
+    "teacher_fdam": 0.6711409395973155
+  },
+  "frozen_val": "Sequence1,Sequence12,Sequence18,Sequence26,Sequence38,Sequence44,Sequence75,Sequence82",
+  "seed": 3407
+}

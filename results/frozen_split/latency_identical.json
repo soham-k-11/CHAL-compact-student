@@ -1,0 +1,32 @@
+{
+ "teacher_base": {
+  "params_M": 15.752,
+  "GMACs_per_new_frame_uncached": 167.04,
+  "GMACs_per_new_frame_cached": 117.02,
+  "buffer_MB_uncached_raw_frames": 1.05,
+  "buffer_MB_cached_features": 14.68,
+  "ms_uncached_8thr": 907.7,
+  "ms_cached_8thr": 684.9,
+  "ms_uncached_1thr": 2917.7,
+  "ms_cached_1thr": 2029.5
+ },
+ "teacher_fdam": {
+  "params_M": 15.753,
+  "GMACs_per_new_frame_uncached": 167.04,
+  "GMACs_per_new_frame_cached": 117.02,
+  "buffer_MB_uncached_raw_frames": 1.05,
+  "buffer_MB_cached_features": 14.68,
+  "ms_uncached_8thr": 880.7,
+  "ms_cached_8thr": 665.2,
+  "ms_uncached_1thr": 2906.9,
+  "ms_cached_1thr": 2029.8
+ },
+ "student": {
+  "params_M": 1.414,
+  "GMACs_per_new_frame": 1.99,
+  "buffer_MB": 1.05,
+  "ms_8thr": 17.3,
+  "ms_1thr": 46.9
+ },
+ "peak_process_GB": 0.81
+}

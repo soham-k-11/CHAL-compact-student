@@ -1,3 +1,64 @@
+# HSCD course project: a compact student for CHAL
+
+This repository is a course project built on top of the official CHAL code by Duan et al. (CVPR 2026,
+[original repository](https://github.com/UESTC-nnLab/CHAL)). Their commits are kept at the start of the history,
+and everything we changed or added comes after them. The original README follows below our section.
+
+**What we did, on NUDT-MIRSDT only:**
+
+- Retrained CHAL. The public code imports `nets/module/CBAM.py`, which was never published, so we wrote our own
+  from the authors' attention classes. We also fixed a few loading and evaluation bugs.
+- Built a compact student (1.41 M parameters, 1.99 GMACs per new frame) that runs the backbone once per frame
+  and uses the median of a 4-frame buffer as its background.
+- Tried feature distillation, frequency-balanced feature distillation, and a CHAL teacher with FDAM-style
+  attention, all on one frozen split.
+
+**Main results (test set, frozen split, one run each; teachers 4 epochs, students 8 epochs):**
+
+| Model | F1 (%) | Pd (%) | Pd low contrast (%) | False alarms / frame | mAP50 (%) |
+| --- | --- | --- | --- | --- | --- |
+| T0: original CHAL teacher | 68.2 | 51.7 | 11.5 | 0.000 | 64.8 |
+| T1: CHAL teacher with FDAM | 68.8 | 56.2 | 15.7 | 0.062 | 60.6 |
+| S0: student, labels only | 90.1 | 82.9 | 59.0 | 0.010 | 75.0 |
+| S1: + feature distillation | 88.5 | 80.6 | 57.5 | 0.015 | 73.2 |
+| S2: + frequency-balanced distillation | 90.3 | 85.9 | 67.1 | 0.038 | 73.1 |
+| S3: + frequency-balanced distillation from T1 | 87.9 | 79.2 | 50.1 | 0.009 | 74.6 |
+
+The student runs in 17 ms per frame on a laptop CPU (AMD Ryzen AI 7 350, 8 threads), against 685 ms for the
+teacher even when the teacher reuses its past backbone features.
+
+**Limitations, plainly:** our CHAL teacher is well below the paper (our 50-epoch teacher: COCO F1 76.4 against
+87.4), so these results say distillation from *our* teacher did not help, not that distillation from CHAL cannot
+help. Each model was trained once and briefly, so small differences are not reliable. We also found that CHAL's
+`train.py` never puts 920 of the model's own parameters into the optimizer (the Swin relative position bias,
+positional embedding, frame weights and a time scale); we left this as it is for the teacher so the comparisons
+stay matched. The full write-up is in `report/main.tex`.
+
+**What is where:**
+
+| Path | Contents |
+| --- | --- |
+| `nets/module/CBAM.py` | Our CBAM, built from the authors' `ChannelAttention` and `SpatialAttention` |
+| `nets/student.py` | The compact student and a frame-by-frame streaming wrapper |
+| `nets/distill.py` | Teacher hooks, feature and frequency-balanced distillation losses |
+| `nets/stst.py` | FDAM attention inversion and frequency scaling, switched on with `fdam=True` |
+| `train_student.py` | Student training (`CHAL_STUDENT_MODE` = labels, feature, frequency, distill or robust) |
+| `utils_coco/nudt_to_coco.py` | NUDT-MIRSDT masks to boxes, the split, and a split manifest |
+| `utils/det_metrics.py`, `utils/det_report.py` | Pd / false alarm metrics, per-sequence and low-contrast breakdown |
+| `utils/background_change.py` | The label-preserving background-change test |
+| `kaggle_full.py`, `kaggle_full.ipynb` | Runs the frozen-split experiments on Kaggle in two stages (teachers, then students) |
+| `kaggle_train.py`, `kaggle_student.py` | Earlier Kaggle runners for the teacher and the pilot |
+| `profile_models.py` | Parameters, MACs and CPU latency |
+| `models/` | The four trained students from the frozen split (load with `CompactStudent(1)`) |
+| `results/` | Scores, per-sequence reports, configs and timings for every run |
+| `report/main.tex` | Project report (LaTeX) |
+
+**Reproducing:** upload this code and the NUDT-MIRSDT dataset to Kaggle, open `kaggle_full.ipynb` with GPU T4 x2,
+and run `STAGE = 'teachers'` (about 5-10 GPU-hours), then `STAGE = 'students'` with the first stage's output
+attached (about 7-8 GPU-hours). Each stage picks its number of epochs from the measured speed.
+
+---
+
 # CHAL
 **[CVPR 26]CHAL: Causal-guided Hierarchical Anomaly-aware Learning for Moving Infrared Small Target Detection**
 

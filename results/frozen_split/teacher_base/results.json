@@ -1,0 +1,43 @@
+{
+  "val": {
+    "threshold": 0.6500000000000001,
+    "pd": 0.5678851174934726,
+    "precision": 0.8562992125984252,
+    "f1": 0.6828885400313972,
+    "false_alarms": 73,
+    "false_alarms_per_frame": 0.09125,
+    "fa_pixel": 4.990408842374552e-05,
+    "num_targets": 766,
+    "num_frames": 800,
+    "threshold_source": "best F1 on this split",
+    "map50": 0.6649320463935069
+  },
+  "test": {
+    "threshold": 0.6500000000000001,
+    "pd": 0.5170618854829381,
+    "precision": 1.0,
+    "f1": 0.6816622188333968,
+    "false_alarms": 0,
+    "false_alarms_per_frame": 0.0,
+    "fa_pixel": 0.0,
+    "num_targets": 1729,
+    "num_frames": 2000,
+    "threshold_source": "fixed",
+    "map50": 0.6481831908530681
+  },
+  "test_bg": {
+    "threshold": 0.6500000000000001,
+    "pd": 0.4939271255060729,
+    "precision": 1.0,
+    "f1": 0.6612466124661247,
+    "false_alarms": 0,
+    "false_alarms_per_frame": 0.0,
+    "fa_pixel": 0.0,
+    "num_targets": 1729,
+    "num_frames": 2000,
+    "threshold_source": "fixed",
+    "map50": 0.6235385586439092
+  },
+  "finished_epochs": 4,
+  "planned_epochs": 4
+}

@@ -1,0 +1,149 @@
+{
+  "plan": {
+    "stage": "teachers",
+    "epochs": 4,
+    "iters_per_epoch": 900,
+    "epoch_hours": {
+      "teacher_base": 0.49499999999999994,
+      "teacher_fdam": 0.447
+    },
+    "speed_it_per_s": {
+      "teacher_base": 0.6060606060606061,
+      "teacher_fdam": 0.6711409395973155
+    },
+    "frozen_val": "Sequence1,Sequence12,Sequence18,Sequence26,Sequence38,Sequence44,Sequence75,Sequence82",
+    "seed": 3407
+  },
+  "models": {
+    "teacher_base": {
+      "val": {
+        "threshold": 0.6500000000000001,
+        "pd": 0.5678851174934726,
+        "precision": 0.8562992125984252,
+        "f1": 0.6828885400313972,
+        "false_alarms": 73,
+        "false_alarms_per_frame": 0.09125,
+        "fa_pixel": 4.990408842374552e-05,
+        "num_targets": 766,
+        "num_frames": 800,
+        "threshold_source": "best F1 on this split",
+        "map50": 0.6649320463935069
+      },
+      "test": {
+        "threshold": 0.6500000000000001,
+        "pd": 0.5170618854829381,
+        "precision": 1.0,
+        "f1": 0.6816622188333968,
+        "false_alarms": 0,
+        "false_alarms_per_frame": 0.0,
+        "fa_pixel": 0.0,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.6481831908530681
+      },
+      "test_bg": {
+        "threshold": 0.6500000000000001,
+        "pd": 0.4939271255060729,
+        "precision": 1.0,
+        "f1": 0.6612466124661247,
+        "false_alarms": 0,
+        "false_alarms_per_frame": 0.0,
+        "fa_pixel": 0.0,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.6235385586439092
+      },
+      "finished_epochs": 4,
+      "planned_epochs": 4,
+      "test_low_contrast": {
+        "threshold": 0.6500000000000001,
+        "pd": 0.11531190926275993,
+        "precision": 1.0,
+        "f1": 0.20677966101694917,
+        "false_alarms": 0,
+        "false_alarms_per_frame": 0.0,
+        "fa_pixel": 0.0,
+        "num_targets": 529,
+        "num_frames": 800
+      },
+      "test_other": {
+        "threshold": 0.6500000000000001,
+        "pd": 0.6941666666666667,
+        "precision": 1.0,
+        "f1": 0.8194786030496802,
+        "false_alarms": 0,
+        "false_alarms_per_frame": 0.0,
+        "fa_pixel": 0.0,
+        "num_targets": 1200,
+        "num_frames": 1200
+      }
+    },
+    "teacher_fdam": {
+      "val": {
+        "threshold": 0.55,
+        "pd": 0.6135770234986945,
+        "precision": 0.7925801011804384,
+        "f1": 0.6916850625459897,
+        "false_alarms": 123,
+        "false_alarms_per_frame": 0.15375,
+        "fa_pixel": 0.00022019274392966504,
+        "num_targets": 766,
+        "num_frames": 800,
+        "threshold_source": "best F1 on this split",
+        "map50": 0.6278642659620407
+      },
+      "test": {
+        "threshold": 0.55,
+        "pd": 0.5621746674378253,
+        "precision": 0.886052871467639,
+        "f1": 0.6878980891719745,
+        "false_alarms": 125,
+        "false_alarms_per_frame": 0.0625,
+        "fa_pixel": 7.288730214397687e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.6059486426576906
+      },
+      "test_bg": {
+        "threshold": 0.55,
+        "pd": 0.5228455754771544,
+        "precision": 0.8634192932187201,
+        "f1": 0.6512968299711815,
+        "false_alarms": 143,
+        "false_alarms_per_frame": 0.0715,
+        "fa_pixel": 8.553499041211522e-05,
+        "num_targets": 1729,
+        "num_frames": 2000,
+        "threshold_source": "fixed",
+        "map50": 0.5645278507654424
+      },
+      "finished_epochs": 4,
+      "planned_epochs": 4,
+      "test_low_contrast": {
+        "threshold": 0.55,
+        "pd": 0.15689981096408318,
+        "precision": 0.40487804878048783,
+        "f1": 0.22615803814713895,
+        "false_alarms": 122,
+        "false_alarms_per_frame": 0.1525,
+        "fa_pixel": 0.00018020245216403158,
+        "num_targets": 529,
+        "num_frames": 800
+      },
+      "test_other": {
+        "threshold": 0.55,
+        "pd": 0.7408333333333333,
+        "precision": 0.9966367713004485,
+        "f1": 0.849904397705545,
+        "false_alarms": 3,
+        "false_alarms_per_frame": 0.0025,
+        "fa_pixel": 2.059577799273544e-06,
+        "num_targets": 1200,
+        "num_frames": 1200
+      }
+    }
+  }
+}
