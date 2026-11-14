@@ -127,7 +127,7 @@ def get_window_size(x_size, window_size, shift_size=None):
         return tuple(use_window_size), tuple(use_shift_size)
 
 class WindowAttention3D(nn.Module):
-    def __init__(self, dim, window_size, num_heads, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
+    def __init__(self, dim, window_size, num_heads, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., fdam=False):
         super().__init__()
         self.dim = dim
         self.window_size = window_size
@@ -162,6 +162,15 @@ class WindowAttention3D(nn.Module):
         trunc_normal_(self.relative_position_bias_table, std=.02)
         self.softmax = nn.Softmax(dim=-1)
 
+        # FDAM attention inversion (Chen et al., ICCV 2025): softmax attention is a low-pass filter A, and its
+        # complement I - A is the matching high-pass filter. Each query token mixes the two with weights predicted
+        # from its own features, per head. Starting at (1, 0) leaves the original attention unchanged.
+        self.inversion = None
+        if fdam:
+            self.inversion = nn.Linear(dim, 2 * num_heads)
+            nn.init.zeros_(self.inversion.weight)
+            nn.init.zeros_(self.inversion.bias)
+
     def forward(self, x, mask=None):
         B_, N, C = x.shape
         qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
@@ -185,7 +194,11 @@ class WindowAttention3D(nn.Module):
 
         attn = self.attn_drop(attn)
 
-        x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
+        low = attn @ v
+        if self.inversion is not None:
+            weights = self.inversion(x).view(B_, N, 2, self.num_heads).permute(2, 0, 3, 1).unsqueeze(-1)
+            low = (1.0 + weights[0]) * low + weights[1] * (v - low)
+        x = low.transpose(1, 2).reshape(B_, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
@@ -212,7 +225,7 @@ def create_mask(D, H, W, window_size, shift_size, device, dtype_model=torch.floa
 class SwinTransformerLayer3D(nn.Module):
     def __init__(self, dim, num_heads, window_size=(2,7,7), shift_size=(0,0,0),
                  mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., drop_path=0.,
-                 act_layer=nn.GELU, norm_layer=nn.LayerNorm, use_checkpoint=False):
+                 act_layer=nn.GELU, norm_layer=nn.LayerNorm, use_checkpoint=False, fdam=False):
         super().__init__()
         self.dim = dim
         self.num_heads = num_heads
@@ -228,7 +241,7 @@ class SwinTransformerLayer3D(nn.Module):
         self.norm1 = norm_layer(dim)
         self.attn = WindowAttention3D(
             dim, window_size=self.window_size, num_heads=num_heads,
-            qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+            qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop, fdam=fdam)
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -288,6 +301,26 @@ class SwinTransformerLayer3D(nn.Module):
             x = x + self.forward_part2(x)
         return x
 
+class FrequencyScale(nn.Module):
+    # FDAM frequency dynamic scaling (Chen et al., ICCV 2025): each frame's spectrum is split into bands x bands
+    # frequency bands, and each band of each channel is rescaled by 1 + a mix of learned static weights, with mixing
+    # coefficients predicted from the frame. The static weights start at zero, so it starts as the identity.
+    def __init__(self, dim, bands=4, bases=4, groups=4):
+        super().__init__()
+        self.groups, self.bands, self.bases = groups, bands, bases
+        self.coefficients = nn.Linear(dim, groups * bases)
+        self.weights = nn.Parameter(torch.zeros(bases, dim // groups, bands, bands))
+
+    def forward(self, x):
+        B, D, H, W, C = x.shape
+        y = x.permute(0, 1, 4, 2, 3).reshape(B * D, C, H, W).float()
+        coefficients = torch.tanh(self.coefficients(y.mean((2, 3)))).view(B * D, self.groups, self.bases)
+        scale = 1.0 + torch.einsum('bgn,ncij->bgcij', coefficients, self.weights.float()).reshape(B * D, C, self.bands, self.bands)
+        spectrum = torch.fft.rfft2(y, norm='ortho')
+        scale = F.interpolate(scale, size=spectrum.shape[-2:], mode='nearest')
+        y = torch.fft.irfft2(spectrum * scale, s=(H, W), norm='ortho')
+        return y.view(B, D, C, H, W).permute(0, 1, 3, 4, 2).to(x.dtype)
+
 class AnomalyMapProcessor(nn.Module):
 \
 \
@@ -341,7 +374,8 @@ class SpatioTemporalSwinTransformer(nn.Module):
                  window_size=8,
                  num_layers=2,
                  mlp_ratio=4.0,
-                 drop_path_rate=0.1):
+                 drop_path_rate=0.1,
+                 fdam=False):
         super().__init__()
 
         self.num_frames = num_frames
@@ -359,9 +393,11 @@ class SpatioTemporalSwinTransformer(nn.Module):
                 window_size=self.window_size,
                 shift_size=(0,0,0) if (i % 2 == 0) else self.shift_size,
                 mlp_ratio=mlp_ratio,
-                drop_path=dpr[i]
+                drop_path=dpr[i],
+                fdam=fdam
             ) for i in range(num_layers)
         ])
+        self.freq_scale = FrequencyScale(embed_dim) if fdam else None
 
         self.anomaly_reconstruct = nn.Sequential(
             BaseConv(embed_dim, embed_dim // 2, 3, 1),
@@ -391,6 +427,8 @@ class SpatioTemporalSwinTransformer(nn.Module):
                 x.device, x.dtype
             )
             x = layer(x, mask_matrix)
+        if self.freq_scale is not None:
+            x = self.freq_scale(x)
 
         current_frame = x[:, -1]
         current_frame = current_frame.permute(0, 3, 1, 2)

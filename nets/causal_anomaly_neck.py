@@ -146,6 +146,7 @@ class CausalAnomalyNeck(nn.Module):
                  fusion_dim=128,
                  bg_method='neural_field',
                  bg_kwargs=None,
+                 fdam=False,
                  ):
         super().__init__()
 
@@ -179,7 +180,8 @@ class CausalAnomalyNeck(nn.Module):
             num_heads=2,
             window_size=4,
             num_layers=1,
-            drop_path_rate=0.2
+            drop_path_rate=0.2,
+            fdam=fdam
         )
 
         self.feature_modulation = nn.Sequential(

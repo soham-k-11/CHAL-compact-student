@@ -141,7 +141,7 @@ class YOLOXHead(nn.Module):
         return outputs
 
 class slowfastnet(nn.Module):
-    def __init__(self, num_classes, num_frame=5, bg_method='neural_field', bg_kwargs=None):
+    def __init__(self, num_classes, num_frame=5, bg_method='neural_field', bg_kwargs=None, fdam=False):
         super(slowfastnet, self).__init__()
         self.num_frame = num_frame
 
@@ -162,6 +162,7 @@ class slowfastnet(nn.Module):
             channels=[128, 256, 512],
             num_frame=num_frame,
             fusion_dim=128,
+            fdam=fdam,
         )
 
         self.head = YOLOXHead(num_classes=num_classes, width = 1.0, in_channels = [128], act = "silu")
