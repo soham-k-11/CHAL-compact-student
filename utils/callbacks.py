@@ -13,7 +13,7 @@ import numpy as np
 
 from PIL import Image
 from tqdm import tqdm
-from .utils import cvtColor, preprocess_input, resize_image
+from .utils import cvtColor, history_frame_paths, preprocess_input, resize_image
 from .utils_bbox import decode_outputs, non_max_suppression
 from .utils_map import get_coco_map, get_map
 
@@ -106,10 +106,7 @@ class EvalCallback():
                 f.write("\n")
 
     def get_history_imgs(self, line):
-        dir_path = line.replace(line.split('/')[-1],'')
-        file_type = line.split('.')[-1]
-        index = int(line.split('/')[-1][:-4])
-        return [os.path.join(dir_path,  "%d.%s" % (max(id, 0),file_type)) for id in range(index - 4, index + 1)]
+        return history_frame_paths(line, 5)
 
     def get_map_txt(self, image_id, images, class_names, map_out_path):
         f = open(os.path.join(map_out_path, "detection-results/"+image_id+".txt"),"w")
@@ -177,7 +174,7 @@ class EvalCallback():
 \
 \
 
-                image_id    = "-".join(line[0].split("/")[6:8]).split('.')[0]
+                image_id    = "-".join(line[0].split("/")[-3:]).split('.')[0]
 
                 images = self.get_history_imgs(line[0])
                 images = [Image.open(item) for item in images]

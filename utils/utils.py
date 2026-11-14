@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from PIL import Image
 
@@ -47,3 +48,19 @@ def show_config(**kwargs):
     for key, value in kwargs.items():
         print('|%25s | %100s|' % (str(key), str(value)))
     print('-' * 130)
+
+def history_frame_paths(path, num_frame):
+    dir_path, file_name = os.path.split(path)
+    stem, ext = os.path.splitext(file_name)
+    index = int(stem)
+
+    paths = [path]
+    for id in range(index - 1, index - num_frame, -1):
+        for name in ('%0*d' % (len(stem), id), '%d' % id):
+            candidate = os.path.join(dir_path, name + ext)
+            if id >= 0 and os.path.exists(candidate):
+                paths.append(candidate)
+                break
+        else:
+            paths.append(paths[-1])
+    return paths[::-1]

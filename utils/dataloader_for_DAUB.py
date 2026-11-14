@@ -8,6 +8,8 @@ import xml.etree.ElementTree as ET
 import time
 import torch
 
+from .utils import history_frame_paths
+
 def cvtColor(image):
     if len(np.shape(image)) == 3 and np.shape(image)[2] == 3:
         return image
@@ -114,21 +116,10 @@ class seqDataset(Dataset):
 
         h, w = self.image_size, self.image_size
         file_name = self.img_idx[index]
-        image_id = int(file_name.split("/")[-1][:-4])
-        image_path = file_name.replace(file_name.split("/")[-1], '')
-        label_data = self.anno_idx[index]
+        label_data = self.anno_idx[index].copy()
+        frame_paths = history_frame_paths(file_name, self.num_frame)[::-1]
         for id in range(0, self.num_frame):
-            img_path_bmp = image_path + '%d.bmp' % max(image_id - id, 0)
-            img_path_png = image_path + '%d.png' % max(image_id - id, 0)
-            img_path_jpg = image_path + '%d.jpg' % max(image_id - id, 0)
-            if os.path.exists(img_path_jpg):
-                img = Image.open(img_path_jpg)
-            elif os.path.exists(img_path_bmp):
-                img = Image.open(img_path_bmp)
-            elif os.path.exists(img_path_png):
-                img = Image.open(img_path_png)
-            else:
-                raise FileNotFoundError(f"Image not found: {img_path_bmp} or {img_path_png}")
+            img = Image.open(frame_paths[id])
             img = cvtColor(img)
             iw, ih = img.size
 
